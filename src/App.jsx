@@ -2,114 +2,120 @@ import React, { useState, useEffect } from "react";
 import InputField from "./components/InputField";
 import { TrashIcon, CheckIcon } from "@heroicons/react/24/solid";
 
-const API_URL = "http://localhost:3000/tasks"; 
+const API_URL = "http://localhost:3000/tasks";
 
 const App = () => {
   const [taskTitle, setTaskTitle] = useState("");
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Fetch tasks from backend
-  const fetchTasks = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error("Failed to fetch tasks");
-      const data = await res.json();
-      setTasks(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // FETCH TASKS
   useEffect(() => {
+    const fetchTasks = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        setTasks(data);
+      } catch (err) {
+        setError("Failed to fetch tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchTasks();
   }, []);
 
-  // Add new task
+  // ADD TASK (POST + Optimistic UI)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!taskTitle.trim()) return alert("Task title cannot be empty");
+
+    if (!taskTitle.trim()) {
+      alert("Task title cannot be empty");
+      return;
+    }
 
     const newTask = {
+      id: Date.now().toString(),
       title: taskTitle,
       completed: false,
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistic UI
-    const tempTask = { ...newTask, id: Date.now() };
-    setTasks((prev) => [...prev, tempTask]);
+    // Optimistic update
+    setTasks((prev) => [...prev, newTask]);
     setTaskTitle("");
-    setSuccess("Task created successfully!");
-    setTimeout(() => setSuccess(""), 2000);
 
     try {
-      const res = await fetch(API_URL, {
+      await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(newTask),
       });
-      const savedTask = await res.json();
-      // Replace temp task with backend task (correct ID)
-      setTasks((prev) =>
-        prev.map((task) => (task.id === tempTask.id ? savedTask : task))
-      );
+
+      setSuccess("Task added!");
+      setTimeout(() => setSuccess(""), 2000);
     } catch (err) {
-      setTasks((prev) => prev.filter((task) => task.id !== tempTask.id));
-      setError("Failed to create task");
+      // rollback if failed
+      setTasks((prev) => prev.filter((task) => task.id !== newTask.id));
+      setError("Failed to add task");
     }
   };
 
-  // Delete task
-  const handleDelete = async (taskId) => {
-    const prevTasks = [...tasks];
-    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  // DELETE TASK (Optimistic)
+  const handleDelete = async (id) => {
+    const previousTasks = [...tasks];
+
+    // Optimistic remove
+    setTasks((prev) => prev.filter((task) => task.id !== id));
 
     try {
-      const res = await fetch(`${API_URL}/${taskId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete task");
+      await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
     } catch (err) {
-      setTasks(prevTasks); // rollback
-      setError(err.message);
+      setTasks(previousTasks); // rollback
+      setError("Failed to delete task");
     }
   };
 
-  // Toggle completed
-  const handleToggle = async (taskId) => {
-    const prevTasks = [...tasks];
-    const taskToToggle = tasks.find((t) => t.id === taskId);
-    const updatedTask = { ...taskToToggle, completed: !taskToToggle.completed };
+  // TOGGLE COMPLETE (PATCH)
+  const toggleComplete = async (task) => {
+    const updatedTask = { ...task, completed: !task.completed };
 
-    // Optimistic UI
+    // Optimistic update
     setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? updatedTask : task))
+      prev.map((t) => (t.id === task.id ? updatedTask : t))
     );
 
     try {
-      const res = await fetch(`${API_URL}/${taskId}`, {
+      await fetch(`${API_URL}/${task.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ completed: updatedTask.completed }),
       });
-      if (!res.ok) throw new Error("Failed to update task");
     } catch (err) {
-      setTasks(prevTasks); // rollback
-      setError(err.message);
+      setError("Failed to update task");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-cyan-700 py-10">
-      <div className="bg-slate-300 shadow-lg rounded-xl p-4 w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-4 text-center">Task Manager</h1>
+      <div className="bg-slate-300 shadow-lg rounded-xl p-6 w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Task Manager
+        </h1>
 
-        {/* Input Form */}
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <InputField
             label="Task Title"
@@ -119,70 +125,85 @@ const App = () => {
           />
 
           <button
-            disabled={!taskTitle.trim() || loading}
-            className={`py-2 rounded-lg text-white font-medium transition
+            disabled={!taskTitle.trim()}
+            className={`py-2 rounded-lg text-white font-medium transition-all duration-300
               ${
-                taskTitle.trim() && !loading
+                taskTitle.trim()
                   ? "bg-cyan-600 hover:bg-cyan-700"
                   : "bg-gray-400 cursor-not-allowed"
               }`}
           >
-            {loading ? "Saving..." : "Create Task"}
+            Create Task
           </button>
         </form>
 
-        {/* Messages */}
-        {success && <p className="text-green-600 text-center mt-3">{success}</p>}
-        {error && <p className="text-red-600 text-center mt-3">{error}</p>}
+        {/* STATUS */}
+        {!loading && success && (
+          <p className="text-green-600 text-center mt-3">{success}</p>
+        )}
+        {!loading && error && (
+          <p className="text-red-600 text-center mt-3">{error}</p>
+        )}
 
-        {/* Task List */}
-        {loading && (
-          <div className="flex justify-center mt-4">
+        {/* LOADING */}
+        {loading ? (
+          <div className="flex justify-center mt-6">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
           </div>
-        )}
+        ) : (
+          <>
+            {tasks.length === 0 && (
+              <p className="text-center mt-4 text-gray-600">
+                No tasks yet
+              </p>
+            )}
 
-        {!loading && tasks.length === 0 && (
-          <p className="text-center mt-4 text-gray-600">No tasks yet</p>
-        )}
-
-        <div className="mt-4 space-y-2">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="bg-white p-3 rounded-lg shadow flex justify-between items-center"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={`cursor-pointer ${
-                    task.completed ? "line-through text-gray-400" : "font-medium"
-                  }`}
-                  onClick={() => handleToggle(task.id)}
+            {/* TASK LIST */}
+            <div className="mt-4 space-y-2">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="bg-white p-3 rounded-lg shadow flex justify-between items-center transition-all duration-300 hover:scale-[1.02]"
                 >
-                  {task.title}
-                </span>
-              </div>
+                  <div>
+                    <span
+                      className={`font-medium cursor-pointer ${
+                        task.completed ? "line-through text-gray-400" : ""
+                      }`}
+                      onClick={() => toggleComplete(task)}
+                    >
+                      {task.title}
+                    </span>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleToggle(task.id)}
-                  className="text-green-600 hover:text-green-800"
-                  title="Complete Task"
-                >
-                  <CheckIcon className="h-6 w-6" />
-                </button>
+                    <p className="text-xs text-gray-500">
+                      {new Date(task.createdAt).toLocaleString()}
+                    </p>
+                  </div>
 
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="text-red-600 hover:text-red-800"
-                  title="Delete Task"
-                >
-                  <TrashIcon className="h-6 w-6" />
-                </button>
-              </div>
+                  <div className="flex items-center gap-2">
+                    {/* COMPLETE BUTTON */}
+                    <button
+                      onClick={() => toggleComplete(task)}
+                      className="text-green-600 hover:text-green-800"
+                      title="Complete Task"
+                    >
+                      <CheckIcon className="h-5 w-5" />
+                    </button>
+
+                    {/* DELETE BUTTON */}
+                    <button
+                      onClick={() => handleDelete(task.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete Task"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
