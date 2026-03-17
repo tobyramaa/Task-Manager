@@ -1,0 +1,71 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Learn React basics",
+      "completed": false,
+      "createdAt": "2026-03-17T09:00:00Z"
+    },
+    {
+      "id": "2",
+      "title": "Build a ToDo App",
+      "completed": false,
+      "createdAt": "2026-03-17T09:30:00Z"
+    },
+    {
+      "id": "3",
+      "title": "Write unit tests",
+      "completed": false,
+      "createdAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "4",
+      "title": "Add Tailwind CSS styling",
+      "completed": false,
+      "createdAt": "2026-03-17T10:30:00Z"
+    },
+    {
+      "id": "5",
+      "title": "Implement delete task feature",
+      "completed": false,
+      "createdAt": "2026-03-17T11:00:00Z"
+    },
+    {
+      "id": "6",
+      "title": "Implement complete task toggle",
+      "completed": false,
+      "createdAt": "2026-03-17T11:30:00Z"
+    },
+    {
+      "id": "7",
+      "title": "Show success messages",
+      "completed": false,
+      "createdAt": "2026-03-17T12:00:00Z"
+    },
+    {
+      "id": "8",
+      "title": "Add loading spinner",
+      "completed": false,
+      "createdAt": "2026-03-17T12:30:00Z"
+    },
+    {
+      "id": "9",
+      "title": "Test optimistic UI updates",
+      "completed": false,
+      "createdAt": "2026-03-17T13:00:00Z"
+    },
+    {
+      "id": "10",
+      "title": "Deploy app to Vercel",
+      "completed": false,
+      "createdAt": "2026-03-17T13:30:00Z"
+    },
+    {
+      "id": "d925",
+      "title": "Submit the task of the day",
+      "completed": false,
+      "createdAt": "2026-03-17T20:06:14.275Z"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
