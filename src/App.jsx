@@ -67,7 +67,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-cyan-700 py-10">
-      <div className="bg-slate-300 shadow-lg rounded-xl p-6 w-full max-w-md">
+      <div className="bg-slate-300 shadow-lg rounded-xl p-6 w-90 max-w-md">
         <h1 className="text-2xl font-bold mb-4 text-center">Task Manager</h1>
 
         
